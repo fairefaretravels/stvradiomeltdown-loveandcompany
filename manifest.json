@@ -2,7 +2,7 @@
   "name": "Love & Company — Night Cruise",
   "short_name": "Love & Co.",
   "description": "STV Radiomeltdown Night Cruise player",
-  "start_url": "/stvradiomeltdown-loveandcompany/",
+  "start_url": "start_url": "."
   "display": "standalone",
   "background_color": "#05111a",
   "theme_color": "#05111a",
