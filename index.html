@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#05111a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Love & Co." />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Love & Company — Night Cruise</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --deep: #05111a;
+      --teal: #0d3d4a;
+      --coral: #e8785a;
+      --sand: #d4b896;
+      --foam: #a8c8c0;
+      --panel: rgba(5,17,26,0.84);
+      --mid: #0d2230;
+      --text: #ede8e0;
+      --muted: #4a6068;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--deep);
+      color: var(--text);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      letter-spacing: 0.02em;
+      overflow: hidden;
+    }
+
+    .widget {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      height: 100vh;
+      min-height: 560px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      overflow: auto;
+      background: var(--deep);
+    }
+
+    .gif-wrap {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .gif-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+      opacity: 0.5;
+      filter: saturate(0.85) brightness(0.85);
+    }
+
+    .gif-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(5,17,26,0.4) 0%,
+        rgba(5,17,26,0.1) 30%,
+        rgba(5,17,26,0.55) 65%,
+        rgba(5,17,26,0.97) 100%
+      );
+    }
+
+    .shimmer {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 3px,
+        rgba(168,200,192,0.015) 3px,
+        rgba(168,200,192,0.015) 4px
+      );
+      pointer-events: none;
+    }
+
+    .swap-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 20;
+      background: rgba(5,17,26,0.8);
+      border: 1px solid var(--coral);
+      color: var(--coral);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .swap-btn:hover { background: var(--coral); color: var(--deep); }
+
+    .swap-panel {
+      display: none;
+      position: absolute;
+      top: 34px;
+      right: 10px;
+      z-index: 30;
+      background: rgba(5,17,26,0.97);
+      border: 1px solid #0d2230;
+      padding: 12px;
+      width: 220px;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .swap-panel.open { display: flex; }
+
+    .swap-panel label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: var(--coral);
+      text-transform: uppercase;
+    }
+
+    .swap-panel input[type=text] {
+      width: 100%;
+      background: var(--mid);
+      border: 1px solid #122030;
+      color: var(--text);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      padding: 5px 8px;
+      outline: none;
+    }
+
+    .swap-panel input[type=text]:focus { border-color: var(--coral); }
+
+    .swap-apply {
+      background: var(--coral);
+      color: var(--deep);
+      border: none;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 6px;
+      cursor: pointer;
+    }
+
+    .swap-apply:hover { opacity: 0.85; }
+    .swap-file-row { display: flex; align-items: center; gap: 6px; }
+    .swap-file-label { flex: 1; font-size: 10px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    input[type=file]#gif-file { display: none; }
+
+    .file-pick-btn {
+      background: var(--mid);
+      border: 1px solid #122030;
+      color: var(--text);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .file-pick-btn:hover { border-color: var(--coral); color: var(--coral); }
+
+    .content {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .header {
+      padding: 16px 16px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand-eye {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.24em;
+      color: var(--foam);
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+
+    .brand-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 34px;
+      letter-spacing: 0.05em;
+      line-height: 0.9;
+      color: var(--text);
+    }
+
+    .brand-name span { color: var(--coral); }
+
+    .brand-sub {
+      font-size: 11px;
+      font-style: italic;
+      font-weight: 300;
+      color: var(--sand);
+      letter-spacing: 0.1em;
+      margin-top: 3px;
+    }
+
+    .moon-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px 0;
+    }
+
+    .moon-icon { font-size: 14px; opacity: 0.7; }
+
+    .moon-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      color: var(--foam);
+      text-transform: uppercase;
+      opacity: 0.6;
+    }
+
+    .moon-line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--foam) 0%, transparent 100%); opacity: 0.15; }
+
+    .spacer { flex: 1; }
+
+    .now-playing {
+      background: var(--panel);
+      padding: 10px 16px 8px;
+      border-top: 1px solid rgba(168,200,192,0.1);
+    }
+
+    .np-label {
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      color: var(--coral);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .np-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text);
+    }
+
+    .np-sub {
+      font-size: 10px;
+      font-style: italic;
+      font-weight: 300;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      margin-top: 2px;
+    }
+
+    .progress-wrap {
+      background: var(--panel);
+      padding: 6px 16px 4px;
+      border-top: 1px solid rgba(168,200,192,0.06);
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 2px;
+      background: var(--mid);
+      position: relative;
+      cursor: pointer;
+      border-radius: 1px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--coral), var(--foam));
+      width: 0%;
+      transition: width 0.25s linear;
+      pointer-events: none;
+      border-radius: 1px;
+    }
+
+    input[type=range].scrub {
+      position: absolute;
+      inset: -7px 0;
+      width: 100%;
+      height: 16px;
+      opacity: 0;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    .time-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+
+    .controls {
+      background: var(--panel);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 10px 16px;
+      border-top: 1px solid rgba(168,200,192,0.06);
+    }
+
+    .btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      padding: 4px;
+      transition: color 0.12s, transform 0.1s;
+    }
+
+    .btn:hover { color: var(--coral); transform: scale(1.1); }
+    .btn:active { transform: scale(0.94); }
+    .btn.active { color: var(--foam); }
+
+    .btn-play {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: transparent;
+      border: 2px solid var(--coral);
+      color: var(--coral);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .btn-play::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      border: 1px solid rgba(232,120,90,0.2);
+    }
+
+    body.playing .btn-play {
+      background: var(--coral);
+      color: var(--deep);
+      box-shadow: 0 0 18px rgba(232,120,90,0.35);
+    }
+
+    .btn-play:hover { background: var(--coral); color: var(--deep); }
+
+    .volume-row {
+      background: var(--panel);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 16px 10px;
+    }
+
+    .vol-icon { font-size: 12px; color: var(--muted); }
+    input[type=range].vol { flex: 1; height: 2px; accent-color: var(--coral); cursor: pointer; }
+    .vol-pct { font-size: 9px; color: var(--muted); letter-spacing: 0.08em; min-width: 26px; text-align: right; }
+
+    .playlist-header {
+      background: rgba(5,17,26,0.92);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 16px 6px;
+      border-top: 1px solid rgba(168,200,192,0.08);
+    }
+
+    .pl-label { font-size: 9px; font-weight: 700; letter-spacing: 0.2em; color: var(--coral); text-transform: uppercase; }
+    .pl-count { font-size: 9px; color: var(--muted); letter-spacing: 0.06em; }
+
+    .playlist {
+  flex: 1;
+  overflow-y: auto;
+  background: rgba(5,17,26,0.9);
+  scrollbar-width: thin;
+  scrollbar-color: var(--mid) transparent;
+  max-height: 270px;
+  padding-bottom: 12px;
+}
+
+    .pl-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(13,34,48,0.8);
+      transition: background 0.1s;
+    }
+
+    .pl-item:hover { background: rgba(232,120,90,0.05); }
+    .pl-item.active { background: rgba(232,120,90,0.08); }
+    .pl-num { font-size: 9px; color: var(--muted); min-width: 18px; text-align: right; font-variant-numeric: tabular-nums; }
+    .pl-item.active .pl-num { color: var(--coral); }
+    .pl-name { flex: 1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pl-item.active .pl-name { color: var(--coral); font-weight: 600; }
+    .pl-icon { font-size: 8px; color: var(--coral); opacity: 0; }
+    .pl-item.active .pl-icon { opacity: 1; }
+
+    .footer {
+      background: rgba(5,17,26,0.97);
+      padding: 8px 16px;
+      border-top: 1px solid rgba(168,200,192,0.07);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-links { display: flex; gap: 10px; }
+
+    .footer-links a {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.12s;
+    }
+
+    .footer-links a:hover { color: var(--coral); }
+    .footer-tag { font-size: 8px; color: #111; letter-spacing: 0.1em; }
+    .status-msg { padding: 16px; text-align: center; font-size: 11px; color: var(--muted); }
+    .status-msg.error { color: var(--coral); }
+  </style>
+</head>
+<body>
+<div class="widget">
+
+  <div class="gif-wrap">
+    <img id="bg-gif" src="Love and Company.gif" alt="Night Cruise" />
+    <div class="gif-overlay"></div>
+    <div class="shimmer"></div>
+  </div>
+
+  <button class="swap-btn" id="swap-toggle">⟳ SWAP GIF</button>
+  <div class="swap-panel" id="swap-panel">
+    <label>Paste GIF / image URL</label>
+    <input type="text" id="gif-url" placeholder="https://…/image.gif" />
+    <div class="swap-file-row">
+      <button class="file-pick-btn" onclick="document.getElementById('gif-file').click()">Upload file</button>
+      <span class="swap-file-label" id="file-label">or upload from device</span>
+    </div>
+    <input type="file" id="gif-file" accept="image/*,video/*" />
+    <button class="swap-apply" id="swap-apply">Apply</button>
+  </div>
+
+  <div class="content">
+    <div class="header">
+      <div class="brand-eye">STV Radiomeltdown</div>
+      <div class="brand-name">Love &amp; <span>Company</span></div>
+      <div class="brand-sub">Beach Night Cruising</div>
+    </div>
+
+    <div class="moon-strip">
+      <span class="moon-icon">🌙</span>
+      <span class="moon-label">Coast to Coast</span>
+      <div class="moon-line"></div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="now-playing">
+      <div class="np-label">Now Playing</div>
+      <div class="np-title" id="np-title">Loading station…</div>
+      <div class="np-sub" id="np-sub">STV Radiomeltdown · Night Cruise</div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+        <input type="range" class="scrub" id="scrub" min="0" max="100" value="0" step="0.1" />
+      </div>
+      <div class="time-row">
+        <span id="time-cur">0:00</span>
+        <span id="time-dur">0:00</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn active" id="btn-shuffle" title="Shuffle">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+          <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+        </svg>
+      </button>
+      <button class="btn" id="btn-prev" title="Previous">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="19,20 9,12 19,4"/><rect x="5" y="4" width="2" height="16"/></svg>
+      </button>
+      <button class="btn-play" id="btn-play" title="Play/Pause">
+        <svg id="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+        <svg id="pause-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+      </button>
+      <button class="btn" id="btn-next" title="Next">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,4 15,12 5,20"/><rect x="17" y="4" width="2" height="16"/></svg>
+      </button>
+      <button class="btn active" id="btn-repeat" title="Repeat">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+          <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="volume-row">
+      <span class="vol-icon">🔊</span>
+      <input type="range" class="vol" id="vol" min="0" max="100" value="80" />
+      <span class="vol-pct" id="vol-pct">80%</span>
+    </div>
+
+    <div class="playlist-header">
+      <span class="pl-label">Night Playlist</span>
+      <span class="pl-count" id="pl-count">Loading…</span>
+    </div>
+    <div class="playlist" id="playlist">
+      <div class="status-msg" id="pl-status">Scanning station…</div>
+    </div>
+
+    <div class="footer">
+      <div class="footer-links">
+        <a href="https://kick.com/STVNETWORK" target="_blank" rel="noopener">Kick</a>
+        <a href="https://www.youtube.com/@STVRADIOMELTDOWN" target="_blank" rel="noopener">YouTube</a>
+        <a href="https://fairefaretravels.github.io/radiomeltdownorg/" target="_blank" rel="noopener">Radio</a>
+        <a href="https://www.tiktok.com/@sanecatv" target="_blank" rel="noopener">@SanecaTV</a>
+      </div>
+      <span class="footer-tag">Love & Co.</span>
+    </div>
+  </div>
+</div>
+
+<audio id="audio" preload="metadata" crossorigin="anonymous"></audio>
+
+<script>
+const REPO_OWNER   = 'fairefaretravels';
+const REPO_NAME    = 'radiomeltdownorg';
+const RAW_BASE     = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/`;
+const API_URL      = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/`;
+const PLAYLIST_URL = RAW_BASE + 'playlist.json';
+const AUDIO_EXTS   = ['.mp3','.ogg','.wav','.flac','.m4a','.aac'];
+
+let tracks=[], queue=[], currentIdx=0, shuffleOn=true, repeatOn=true, loaded=false;
+
+const audio        = document.getElementById('audio');
+const npTitle      = document.getElementById('np-title');
+const npSub        = document.getElementById('np-sub');
+const progressFill = document.getElementById('progress-fill');
+const scrub        = document.getElementById('scrub');
+const timeCur      = document.getElementById('time-cur');
+const timeDur      = document.getElementById('time-dur');
+const btnPlay      = document.getElementById('btn-play');
+const playIcon     = document.getElementById('play-icon');
+const pauseIcon    = document.getElementById('pause-icon');
+const btnPrev      = document.getElementById('btn-prev');
+const btnNext      = document.getElementById('btn-next');
+const btnShuffle   = document.getElementById('btn-shuffle');
+const btnRepeat    = document.getElementById('btn-repeat');
+const volSlider    = document.getElementById('vol');
+const volPct       = document.getElementById('vol-pct');
+const plContainer  = document.getElementById('playlist');
+const plStatus     = document.getElementById('pl-status');
+const plCount      = document.getElementById('pl-count');
+const bgGif        = document.getElementById('bg-gif');
+
+document.getElementById('swap-toggle').addEventListener('click', () => {
+  document.getElementById('swap-panel').classList.toggle('open');
+});
+
+document.getElementById('gif-file').addEventListener('change', (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  document.getElementById('file-label').textContent = f.name;
+  document.getElementById('gif-url').value = '';
+  document.getElementById('swap-apply').dataset.blob = URL.createObjectURL(f);
+});
+
+document.getElementById('swap-apply').addEventListener('click', () => {
+  const url = document.getElementById('gif-url').value.trim()
+    || document.getElementById('swap-apply').dataset.blob || '';
+  if (!url) return;
+  bgGif.src = url;
+  document.getElementById('swap-panel').classList.remove('open');
+});
+
+function shuffle(arr) {
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function finishLoadingPlaylist() {
+  if (!tracks.length) {
+    plStatus.textContent = 'No audio files found.';
+    plStatus.classList.add('error');
+    npTitle.textContent = 'No tracks available';
+    npSub.textContent = 'Playlist is empty';
+    return;
+  }
+  queue = shuffleOn ? shuffle([...tracks]) : [...tracks];
+  plStatus.remove();
+  renderPlaylist();
+  plCount.textContent = `${tracks.length} tracks`;
+  loadTrack(0, false);
+  loaded = true;
+}
+
+// Primary: fetch the pre-generated static playlist. This avoids hitting
+// GitHub's unauthenticated Contents API (60 requests/hr per IP) on every
+// single page load, which was causing "Scanning station..." to hang
+// indefinitely once that quota was exhausted.
+async function loadPlaylistFromStatic() {
+  const res = await fetch(PLAYLIST_URL, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`playlist.json ${res.status}`);
+  const data = await res.json();
+  tracks = Array.isArray(data.tracks) ? data.tracks : [];
+}
+
+// Fallback: live scan via the GitHub Contents API. Only used if the
+// static playlist is missing or fails to load. Subject to rate limits.
+async function loadPlaylistFromApi() {
+  const res = await fetch(API_URL, { headers: { 'Accept': 'application/vnd.github+json' } });
+  if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+  const files = await res.json();
+  tracks = files
+    .filter(f => f.type==='file' && AUDIO_EXTS.some(e => f.name.toLowerCase().endsWith(e)))
+    .map(f => ({
+      name: f.name.replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').replace(/\b\w/g,c=>c.toUpperCase()),
+      url: RAW_BASE + encodeURIComponent(f.name)
+    }));
+}
+
+async function loadPlaylist() {
+  try {
+    await loadPlaylistFromStatic();
+    finishLoadingPlaylist();
+  } catch (staticErr) {
+    console.warn('Static playlist failed, falling back to live API scan:', staticErr.message);
+    try {
+      await loadPlaylistFromApi();
+      finishLoadingPlaylist();
+    } catch (apiErr) {
+      const msg = `Couldn't load playlist: ${apiErr.message}`;
+      plStatus.textContent = msg;
+      plStatus.classList.add('error');
+      npTitle.textContent = 'Unable to load station';
+      npSub.textContent = 'Please try again shortly';
+    }
+  }
+}
+
+function renderPlaylist() {
+  plContainer.innerHTML = '';
+  queue.forEach((t,i) => {
+    const el = document.createElement('div');
+    el.className = 'pl-item' + (i===currentIdx ? ' active' : '');
+    el.innerHTML = `<span class="pl-num">${String(i+1).padStart(2,'0')}</span><span class="pl-name">${t.name}</span><span class="pl-icon">♪</span>`;
+    el.addEventListener('click', () => loadTrack(i, true));
+    plContainer.appendChild(el);
+  });
+}
+
+function updateActive() {
+  plContainer.querySelectorAll('.pl-item').forEach((el,i) => el.classList.toggle('active', i===currentIdx));
+  const a = plContainer.querySelector('.pl-item.active');
+  if(a) a.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function loadTrack(idx, autoplay=true) {
+  currentIdx = idx;
+  const t = queue[idx];
+  audio.src = t.url;
+  npTitle.textContent = t.name;
+  npSub.textContent = `STV Radiomeltdown · Track ${idx+1} of ${queue.length}`;
+  updateActive();
+  progressFill.style.width = '0%';
+  scrub.value = 0;
+  timeCur.textContent = '0:00';
+  timeDur.textContent = '0:00';
+  if(autoplay) audio.play().catch(()=>{}); else audio.load();
+}
+
+function fmt(s) {
+  if(!isFinite(s)) return '0:00';
+  return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+}
+
+audio.addEventListener('play',  () => { document.body.classList.add('playing');    playIcon.style.display='none'; pauseIcon.style.display=''; });
+audio.addEventListener('pause', () => { document.body.classList.remove('playing'); playIcon.style.display='';     pauseIcon.style.display='none'; });
+audio.addEventListener('ended', () => { if(repeatOn || currentIdx < queue.length-1) loadTrack((currentIdx+1) % queue.length, true); });
+audio.addEventListener('timeupdate', () => {
+  if(!audio.duration) return;
+  const p = (audio.currentTime / audio.duration) * 100;
+  progressFill.style.width = p + '%';
+  scrub.value = p;
+  timeCur.textContent = fmt(audio.currentTime);
+});
+audio.addEventListener('loadedmetadata', () => { timeDur.textContent = fmt(audio.duration); });
+scrub.addEventListener('input', () => { if(audio.duration) audio.currentTime = (scrub.value/100) * audio.duration; });
+
+audio.volume = 0.8;
+volSlider.addEventListener('input', () => { audio.volume = volSlider.value/100; volPct.textContent = volSlider.value + '%'; });
+
+btnPlay.addEventListener('click',    () => { if(!loaded) return; audio.paused ? audio.play().catch(()=>{}) : audio.pause(); });
+btnPrev.addEventListener('click',    () => { if(!loaded) return; if(audio.currentTime > 3){ audio.currentTime=0; return; } loadTrack((currentIdx-1+queue.length) % queue.length, true); });
+btnNext.addEventListener('click',    () => { if(!loaded) return; loadTrack((currentIdx+1) % queue.length, true); });
+btnShuffle.addEventListener('click', () => {
+  shuffleOn = !shuffleOn;
+  btnShuffle.classList.toggle('active', shuffleOn);
+  const cur = queue[currentIdx];
+  queue = shuffleOn ? shuffle([...tracks]) : [...tracks];
+  currentIdx = queue.findIndex(t => t.url === cur.url);
+  if(currentIdx < 0) currentIdx = 0;
+  renderPlaylist();
+  updateActive();
+});
+btnRepeat.addEventListener('click', () => { repeatOn = !repeatOn; btnRepeat.classList.toggle('active', repeatOn); });
+
+loadPlaylist();
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+
+</body>
+</html>
